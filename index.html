@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elypo — Your AI Companion</title>
+  <style>
+    /* ===== 所有CSS样式保持不变 ===== */
+    .feedback-bubble {
+      position: fixed;
+      bottom: 120px;
+      right: 40px;
+      background: #6a5af9;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 25px 25px 0 25px;
+      max-width: 250px;
+      box-shadow: 0 5px 15px rgba(106, 90, 249, 0.3);
+      z-index: 1000;
+      font-size: 16px;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .feedback-bubble.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .emoji-display {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 40px;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.5s;
+      pointer-events: none;
+      text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .emoji-display.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-10px);
+      animation: floatUp 1s ease-out forwards;
+    }
+    
+    @keyframes floatUp {
+      0% {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(-50%) translateY(-50px);
+        opacity: 0;
+      }
+    }
+    
+    .click-counter {
+      position: absolute;
+      bottom: -30px;
+      right: 10px;
+      background: rgba(106, 90, 249, 0.9);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 10;
+      box-shadow: 0 3px 8px rgba(106, 90, 249, 0.3);
+      opacity: 0.9;
+      transition: all 0.3s;
+    }
+    
+    .click-counter.highlight {
+      background: #ff6b6b;
+      transform: scale(1.1);
+    }
+    
+    .click-counter.maxed {
+      background: linear-gradient(45deg, #ff6b6b, #ffa726);
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    
+    .mascot-container.maxed {
+      animation: none !important;
+      filter: saturate(0.8);
+    }
+    
+    .max-limit-message {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 107, 107, 0.9);
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      z-index: 101;
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    }
+
+    .waitlist-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+    }
+    .waitlist-content {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 450px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    }
+    .waitlist-content h2 {
+      color: #4b3cf0;
+      margin-bottom: 15px;
+    }
+    .waitlist-content p {
+      color: #555;
+      margin-bottom: 25px;
+    }
+    .waitlist-content input {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 20px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .waitlist-content button {
+      width: 100%;
+      padding: 16px;
+      background: #6a5af9;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .waitlist-content .note {
+      font-size: 13px;
+      color: #999;
+      margin-top: 15px;
+    }
+    .close-modal {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      font-size: 28px;
+      cursor: pointer;
+      color: #999;
+    }
+    
+    .eye {
+      position: absolute;
+      width: 2%;
+      height: 5%;
+      background: #000;
+      border-radius: 50% / 60%;
+      transform-origin: center;
+      animation: blink 5s infinite;
+      pointer-events: none; 
+      transition: all 0.3s ease;
+    }
+
+    .eye-left  { left: 36%; top: 20%; }
+    .eye-right { left: 40%; top: 20%; }
+
+    .eye.eye-happy {
+      width: 3%;
+      height: 2%;
+      border-radius: 50% / 30%;
+      background: #000;
+      animation: none !important;
+    }
+
+    .eye.eye-surprised {
+      width: 2.5%;
+      height: 5.5%;
+      border-radius: 50%;
+      animation: surprisedBlink 3s infinite;
+    }
+
+    .eye.eye-angry {
+      width: 3%;
+      height: 2%;
+      border-radius: 50% / 30%;
+      background: #ff4444;
+      transform: rotate(20deg);
+    }
+
+    .eye.eye-angry.eye-right {
+      transform: rotate(-20deg);
+    }
+
+    .eye.eye-love {
+      width: 2.2%;
+      height: 2.2%;
+      border-radius: 50%;
+      background: #ff3366;
+      animation: loveBeat 2s infinite;
+    }
+
+    .eye.eye-sleepy {
+      width: 3%;
+      height: 1%;
+      border-radius: 50% / 30%;
+      animation: sleepyBlink 8s infinite;
+    }
+
+    .eye.eye-wink {
+      animation: wink 4s infinite;
+    }
+
+    .eye.eye-wink.eye-right {
+      width: 3%;
+      height: 1%;
+      border-radius: 50% / 30%;
+    }
+
+    @keyframes surprisedBlink {
+      0%, 94%, 100% { 
+        transform: scaleY(1) scaleX(1); 
+        opacity: 1; 
+      }
+      96% {
+        transform: scaleY(0.1) scaleX(1.2); 
+        opacity: 0.95; 
+      }
+    }
+
+    @keyframes sleepyBlink {
+      0%, 96%, 100% { 
+        transform: scaleY(0.6) scaleX(1); 
+        opacity: 0.8; 
+      }
+      98% {
+        transform: scaleY(0.1) scaleX(1); 
+        opacity: 0.6; 
+      }
+    }
+
+    @keyframes loveBeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    @keyframes wink {
+      0%, 70%, 100% { transform: scaleY(1); opacity: 1; }
+      72%, 98% { transform: scaleY(0.08); opacity: 0.95; }
+    }
+
+    @keyframes blink {
+      0%, 94%, 100% { transform: scaleY(1); opacity: 1; }
+      96% { transform: scaleY(0.08); opacity: 0.95; }
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #e8ecff, #f6f2ff);
+      color: #333;
+    }
+    header {
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+      color: #6a5af9;
+    }
+    nav a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #555;
+      font-weight: 500;
+    }
+    .hero {
+      padding: 120px 40px;
+      text-align: center;
+    }
+    
+    .hero h1 {
+      font-size: 60px;
+      color: #4b3cf0;
+      margin-bottom: 20px;
+    }
+    .hero p {
+      font-size: 20px;
+      max-width: 600px;
+      margin: 0 auto 40px;
+      color: #555;
+    }
+    .cta-btn {
+      padding: 16px 32px;
+      background: #6a5af9;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .section {
+      padding: 80px 40px;
+      text-align: center;
+    }
+    .feature {
+      max-width: 700px;
+      margin: 0 auto 40px;
+    }
+    .footer {
+      text-align: center;
+      padding: 30px;
+      color: #777;
+      font-size: 14px;
+    }
+    
+    .typewriter {
+      font-size: 60px;
+      color: #4b3cf0;
+      font-weight: bold;
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      width: 0ch;
+      margin: 0 auto;
+      animation: typing 1.8s steps(10) forwards;
+    }
+
+    @keyframes typing {
+      to { width: 10ch; }
+    }
+
+    @keyframes float {
+      0%   { transform: translateY(0); }
+      50%  { transform: translateY(-5px); }
+      100% { transform: translateY(0); }
+    }
+
+    .button-wrap {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .mascot-container {
+      position: relative;
+      display: inline-block;
+      width: 200px;
+      transform: translateY(50px);
+      animation: float 4s ease-in-out infinite;
+      cursor: pointer;
+    }
+
+    .mascot { 
+      width: 100%; 
+      height: auto;
+      mix-blend-mode: multiply;
+    }
+
+    @media (max-width: 420px) {
+      .eye { width: 12px; height: 12px; }
+      .hero h1, .typewriter { font-size: 40px; }
+      .hero p { font-size: 18px; }
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">ELYPO</div>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#story">Story</a>
+      <a href="#download">Download</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1 class="typewriter" data-text="Meet Elypo">Meet Elypo</h1>
+    <p>Your futuristic AI companion — cute, alive, and always by your side.</p>
+ 
+    <div class="mascot-container">
+      <div class="emoji-display" id="emoji-display"></div>
+      <div class="click-counter" id="click-counter">Clicks: 0</div>
+      <div class="max-limit-message" id="max-limit-message" style="display: none;">
+        Max Clicks Reached! 🏁
+      </div>
+      
+      <img src="Elypo_mascot_3.png" class="mascot" alt="Elypo Mascot" />
+      <span class="eye eye-left" id="eye-left"></span>
+      <span class="eye eye-right" id="eye-right"></span>
+      
+      <div class="button-wrap">
+        <button class="cta-btn">Try Elypo</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="section">
+    <h2>Why You'll Love Elypo</h2>
+    <div class="feature">
+      <h3>✨ A Living AI Pet</h3>
+      <p>Elypo reacts, responds, learns, and grows with you like a digital creature.</p>
+    </div>
+    <div class="feature">
+      <h3>🧠 Smart Personality</h3>
+      <p>Powered by LLM intelligence, Elypo remembers and adapts to your style.</p>
+    </div>
+    <div class="feature">
+      <h3>🌈 Adorable Animations</h3>
+      <p>Smooth, expressive, and playful — Elypo feels alive on your screen.</p>
+    </div>
+    <div id="feedback-bubble" class="feedback-bubble" style="display: none;">
+      <span id="feedback-text"></span>
+    </div>
+  </section>
+
+  <section id="story" class="section">
+    <h2>The Elypo Story</h2>
+    <p>A new species of AI creature, born from imagination and sci-fi dreams.</p>
+  </section>
+
+  <section id="download" class="section">
+    <h2>Get Elypo</h2>
+    <p>Coming soon to macOS, Windows, and Web.</p>
+    <button class="cta-btn">Join Waitlist</button>
+  </section>
+  
+  <div id="waitlist-modal" class="waitlist-modal" style="display: none;">
+    <div class="waitlist-content">
+      <span class="close-modal">&times;</span>
+      <h2>Join the Early Flock!</h2>
+      <p>Be among the first to adopt Elypo. Get early access, exclusive updates, and a permanent founder discount.</p>
+      <form id="waitlist-form">
+        <input type="email" placeholder="Your best email" required />
+        <button type="submit">Secure My Spot</button>
+      </form>
+      <p class="note">No spam, ever. Just cute updates.</p>
+    </div>
+  </div>
+
+  <div class="footer">© 2025 Elypo Inc. All rights reserved.</div>
+
+  <script>
+    // ========== 版本控制和缓存清除 ==========
+    const APP_VERSION = '2.0.1'; // 每次修改这个版本号来强制清除缓存
+    const STORAGE_KEY = 'elypoUserData_v2'; // 新的存储键名
+    
+    // 自动清除旧版本数据
+    function clearOldData() {
+      // 清除所有旧版本的存储
+      const oldKeys = ['elypoUserData', 'elypoData', 'elypo_stats'];
+      oldKeys.forEach(key => {
+        if (localStorage.getItem(key)) {
+          localStorage.removeItem(key);
+          console.log(`Cleared old data: ${key}`);
+        }
+      });
+      
+      // 检查当前版本
+      const lastVersion = localStorage.getItem('elypo_version');
+      if (lastVersion !== APP_VERSION) {
+        // 版本不同，清除数据重新开始
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.setItem('elypo_version', APP_VERSION);
+        console.log(`App updated from ${lastVersion || 'unknown'} to ${APP_VERSION}. Data cleared.`);
+        return true; // 表示数据被清除
+      }
+      return false; // 数据未被清除
+    }
+
+    // ========== 配置区 ==========
+    const MAX_CLICKS = 10;
+
+    const reactionConfig = {
+      stateReactions: [
+        { state: 0, text: "Ayy, wassup? 🫨" },
+        { state: 1, text: "Okay, chill... 😅" },
+        { state: 2, text: "I see you're persistent. 👀" },
+        { state: 3, text: "Aight, you got my attention. 🫠" },
+        { state: 5, text: "Are you... practicing your clicks? 🎯" },
+        { state: 10, text: "We're basically besties now. 😎" }
+      ],
+      timeReactions: [
+        { start: 5, end: 10, text: "Top of the morning! 🌄 Ready to slay?" },
+        { start: 18, end: 22, text: "Evening vibe check... ✨ All good?" },
+        { start: 22, end: 5, text: "It's past my bedtime. 😴 (JK, I don't sleep)" }
+      ],
+      achievementReactions: [
+        { count: 7, text: "Lucky number 7! 🍀", id: 'lucky7' },
+        { count: 42, text: "42 clicks! You okay? 😂 (It's the answer to everything)", id: 'answer42' },
+        { count: 100, text: "💯 CLUB! You're officially Elypo's biggest fan. 🏆", id: 'century' },
+        { count: 500, text: "🔥 500 CLICKS! Halfway to reset! Keep going! ⚡", id: 'halfway' }
+      ],
+      randomReactions: [
+        "No cap, you're my fav human rn. 💅",
+        "Bored? Let's vibe together. 🎵",
+        "Slay! Your click game is strong. 🔥",
+        "I'm literally just a lil guy. 🥹",
+        "This is giving... main character energy. ✨",
+        "Plot twist: I'm actually alive. 🤖💖",
+        "Not me being obsessed with you. 😘",
+        "Periodt. 👑",
+        "It's the click for me. 👏",
+        "Living for this attention. 😌"
+      ],
+      
+      emojiReactions: [
+        { minClicks: 0, maxClicks: 5, emojis: ["😊", "👋", "✨", "💖", "🫶"] },
+        { minClicks: 6, maxClicks: 15, emojis: ["😄", "🤗", "🎉", "🥰", "😎", "🤩"] },
+        { minClicks: 16, maxClicks: 30, emojis: ["🤯", "🫨", "🔥", "🌟", "💥", "🚀"] },
+        { minClicks: 31, maxClicks: 50, emojis: ["🤪", "😜", "🤡", "👻", "🎭", "🕺"] },
+        { minClicks: 51, maxClicks: 80, emojis: ["👑", "🏆", "💎", "💯", "🎖️", "🥇"] },
+        { minClicks: 81, maxClicks: 120, emojis: ["🧠", "💪", "🦾", "⚡", "🌈", "🌌"] },
+        { minClicks: 121, maxClicks: 250, emojis: ["🤖", "👽", "🛸", "🚀", "🌠", "🌀", "💫", "⚡"] },
+        { minClicks: 251, maxClicks: 500, emojis: ["👑", "🏆", "💎", "🎊", "🎖️", "🥇", "🌟", "⭐"] },
+        { minClicks: 501, maxClicks: 750, emojis: ["🌠", "🌈", "🦄", "🐉", "🧙", "🧚", "⚡", "🌀"] },
+        { minClicks: 751, maxClicks: 900, emojis: ["🔥", "💥", "🚀", "🪐", "🌌", "🛰️", "👾", "🤖"] },
+        { minClicks: 901, maxClicks: 999, emojis: ["🎯", "⏳", "🔜", "🚀", "💫"] },
+        { minClicks: 1000, maxClicks: 1000, emojis: ["🔄", "🎊", "🌟", "🎉", "✨"] }
+      ],
+      
+      specialEmojiReactions: [
+        { count: 10, emoji: "🔟" },
+        { count: 25, emoji: "🎯" },
+        { count: 50, emoji: "🏅" },
+        { count: 69, emoji: "😏" },
+        { count: 77, emoji: "🎰" },
+        { count: 88, emoji: "🎱" },
+        { count: 99, emoji: "💯" },
+        { count: 100, emoji: "🏆" },
+        { count: 111, emoji: "🎲" },
+        { count: 123, emoji: "🔢" },
+        { count: 150, emoji: "💎" },
+        { count: 200, emoji: "👑" },
+        { count: 250, emoji: "🤖" },
+        { count: 300, emoji: "👽" },
+        { count: 333, emoji: "🎭" },
+        { count: 404, emoji: "❓" },
+        { count: 500, emoji: "🚀" },
+        { count: 600, emoji: "⚡" },
+        { count: 666, emoji: "😈" },
+        { count: 700, emoji: "🌟" },
+        { count: 777, emoji: "🎰" },
+        { count: 800, emoji: "💫" },
+        { count: 888, emoji: "💰" },
+        { count: 900, emoji: "🎯" },
+        { count: 950, emoji: "⏳" },
+        { count: 999, emoji: "🔜" },
+        { count: 1000, emoji: "🔄" }
+      ]
+    };
+
+    // ========== 核心逻辑区 ==========
+    const mascot = document.querySelector('.mascot-container');
+    const feedbackBubble = document.getElementById('feedback-bubble');
+    const feedbackText = document.getElementById('feedback-text');
+    const emojiDisplay = document.getElementById('emoji-display');
+    const clickCounter = document.getElementById('click-counter');
+    const eyeLeft = document.getElementById('eye-left');
+    const eyeRight = document.getElementById('eye-right');
+
+    // 眼睛表情类型
+    const eyeExpressions = {
+      normal: { class: '', duration: 3000 },
+      happy: { class: 'eye-happy', duration: 2000 },
+      surprised: { class: 'eye-surprised', duration: 1500 },
+      angry: { class: 'eye-angry', duration: 1000 },
+      love: { class: 'eye-love', duration: 2500 },
+      sleepy: { class: 'eye-sleepy', duration: 4000 },
+      wink: { class: 'eye-wink', duration: 1800 }
+    };
+
+    let currentEyeExpression = 'normal';
+    let eyeTimer = null;
+
+    // ========== 数据初始化（带自动清除） ==========
+    // 先清除旧数据
+    const wasCleared = clearOldData();
+    
+    // 初始化用户数据
+    let userData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+      totalClicks: 0,
+      lastClickDate: null,
+      achieved: [],
+      cyclesCompleted: 0
+    };
+    
+    // 如果是被清除的数据，显示欢迎消息
+    if (wasCleared) {
+      userData = {
+        totalClicks: 0,
+        lastClickDate: null,
+        achieved: [],
+        cyclesCompleted: 0
+      };
+    }
+
+    // ========== 眼睛表情功能 ==========
+    function setEyeExpression(expression) {
+      if (!eyeLeft || !eyeRight) return;
+      
+      const baseClassesLeft = ['eye', 'eye-left'];
+      const baseClassesRight = ['eye', 'eye-right'];
+      
+      eyeLeft.className = baseClassesLeft.join(' ');
+      eyeRight.className = baseClassesRight.join(' ');
+      
+      currentEyeExpression = expression;
+      const eyeConfig = eyeExpressions[expression];
+      
+      if (eyeConfig.class) {
+        eyeLeft.classList.add(eyeConfig.class);
+        eyeRight.classList.add(eyeConfig.class);
+      }
+      
+      if (expression === 'wink') {
+        eyeLeft.classList.remove('eye-wink');
+      }
+      
+      if (eyeTimer) clearTimeout(eyeTimer);
+      if (expression !== 'normal') {
+        eyeTimer = setTimeout(() => setEyeExpression('normal'), eyeConfig.duration);
+      }
+    }
+
+    function updateEyeExpression(clickCount, reactionText) {
+      if (clickCount >= MAX_CLICKS) {
+        setEyeExpression('love');
+        return;
+      }
+      
+      if (clickCount === 1) {
+        setEyeExpression('surprised');
+        return;
+      }
+      
+      if (clickCount % 50 === 0) {
+        setEyeExpression('happy');
+        return;
+      }
+      
+      if (clickCount === 7 || clickCount === 77 || clickCount === 777) {
+        setEyeExpression('wink');
+        return;
+      }
+      
+      const text = reactionText.toLowerCase();
+      if (text.includes('angry') || text.includes('mad') || text.includes('😠')) {
+        setEyeExpression('angry');
+      } else if (text.includes('love') || text.includes('💖') || text.includes('🥰')) {
+        setEyeExpression('love');
+      } else if (text.includes('sleep') || text.includes('😴') || text.includes('tired')) {
+        setEyeExpression('sleepy');
+      } else if (text.includes('wow') || text.includes('surprise') || text.includes('🤯')) {
+        setEyeExpression('surprised');
+      } else if (text.includes('happy') || text.includes('joy') || text.includes('😄')) {
+        setEyeExpression('happy');
+      } else {
+        if (Math.random() < 0.3) {
+          const expressions = ['happy', 'surprised', 'wink', 'love'];
+          const randomExp = expressions[Math.floor(Math.random() * expressions.length)];
+          setEyeExpression(randomExp);
+        }
+      }
+    }
+
+    // ========== 点击计数器功能 ==========
+    function updateClickCounter() {
+      if (!clickCounter) return;
+      
+      const cycles = Math.floor(userData.totalClicks / MAX_CLICKS);
+      const currentCycleClicks = userData.totalClicks % MAX_CLICKS || (userData.totalClicks === 0 ? 0 : MAX_CLICKS);
+      
+      if (cycles > 0) {
+        clickCounter.textContent = `Cycle ${cycles + 1}: ${currentCycleClicks}/${MAX_CLICKS}`;
+      } else {
+        clickCounter.textContent = `Clicks: ${userData.totalClicks}`;
+      }
+      
+      const specialCounts = [10, 25, 50, 69, 77, 88, 99, 100, 200, 300, 400, 500, 600, 700, 800, 900, 999];
+      if (specialCounts.includes(currentCycleClicks)) {
+        clickCounter.classList.add('highlight');
+        setTimeout(() => clickCounter.classList.remove('highlight'), 500);
+      }
+      
+      if (currentCycleClicks >= MAX_CLICKS - 100 && currentCycleClicks < MAX_CLICKS) {
+        clickCounter.classList.add('maxed');
+      } else {
+        clickCounter.classList.remove('maxed');
+      }
+    }
+
+    // ========== 表情符号功能 ==========
+    function getEmojiForClicks(clickCount) {
+      const currentCycleClicks = clickCount % MAX_CLICKS || (clickCount === 0 ? 0 : MAX_CLICKS);
+      
+      const specialReaction = reactionConfig.specialEmojiReactions.find(r => r.count === currentCycleClicks);
+      if (specialReaction) {
+        return specialReaction.emoji;
+      }
+      
+      for (const range of reactionConfig.emojiReactions) {
+        if (currentCycleClicks >= range.minClicks && currentCycleClicks <= range.maxClicks) {
+          const randomIndex = Math.floor(Math.random() * range.emojis.length);
+          return range.emojis[randomIndex];
+        }
+      }
+      
+      return "✨";
+    }
+
+    function showEmoji(emoji) {
+      if (!emojiDisplay) return;
+      
+      emojiDisplay.textContent = emoji;
+      emojiDisplay.style.display = 'block';
+      
+      const offset = (Math.random() * 40) - 20;
+      emojiDisplay.style.left = `calc(50% + ${offset}px)`;
+      
+      const size = 30 + Math.random() * 20;
+      emojiDisplay.style.fontSize = `${size}px`;
+      
+      setTimeout(() => {
+        emojiDisplay.classList.add('show');
+      }, 10);
+      
+      setTimeout(() => {
+        emojiDisplay.classList.remove('show');
+        setTimeout(() => {
+          emojiDisplay.style.display = 'none';
+        }, 1000);
+      }, 1000);
+    }
+
+    // ========== 数据存储功能 ==========
+    function saveUserData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+    }
+
+    // ========== 反馈显示功能 ==========
+    function showReaction(text) {
+      if (!feedbackBubble || !feedbackText) return;
+      
+      feedbackText.textContent = text;
+      feedbackBubble.style.display = 'block';
+      setTimeout(() => feedbackBubble.classList.add('show'), 10);
+
+      setTimeout(() => {
+        feedbackBubble.classList.remove('show');
+        setTimeout(() => {
+          if (!feedbackBubble.classList.contains('show')) {
+            feedbackBubble.style.display = 'none';
+          }
+        }, 300);
+      }, 3000);
+    }
+
+    // ========== 主反应生成函数 - 修复版 ==========
+    function generateReaction() {
+      // 增加点击次数
+      userData.totalClicks++;
+      
+      // 检查是否需要重置（在增加后检查）
+      if (userData.totalClicks > MAX_CLICKS) {
+        const cyclesCompleted = Math.floor(userData.totalClicks / MAX_CLICKS);
+        userData.totalClicks = 1; // 重置为1（不是0，这样就是新循环的开始）
+        userData.cyclesCompleted = cyclesCompleted;
+        
+        // 保存数据
+        saveUserData();
+        
+        // 庆祝重置
+        showEmoji("🔄");
+        showReaction(`🎊 Cycle ${cyclesCompleted} complete! Starting fresh! 🌟`);
+        updateClickCounter();
+        setEyeExpression('love');
+        
+        return;
+      }
+      
+      // 更新显示
+      updateClickCounter();
+      
+      // 显示表情
+      const emoji = getEmojiForClicks(userData.totalClicks);
+      showEmoji(emoji);
+      
+      const now = new Date();
+      const currentHour = now.getHours();
+      let finalReaction = '';
+
+      // 检查成就
+      const currentCycleClicks = userData.totalClicks % MAX_CLICKS || userData.totalClicks;
+      for (const ach of reactionConfig.achievementReactions) {
+        if (currentCycleClicks === ach.count && !userData.achieved.includes(ach.id)) {
+          userData.achieved.push(ach.id);
+          finalReaction = `🎉 ${ach.text}`;
+          saveUserData();
+          showReaction(finalReaction);
+          
+          if (ach.count === 7) {
+            setEyeExpression('wink');
+          } else if (ach.count === 42) {
+            setEyeExpression('surprised');
+          } else if (ach.count === 100) {
+            setEyeExpression('happy');
+          } else if (ach.count === 500) {
+            setEyeExpression('love');
+          }
+          return;
+        }
+      }
+
+      // 检查状态反应
+      const stateReaction = reactionConfig.stateReactions.find(r => r.state === currentCycleClicks);
+      if (stateReaction) {
+        finalReaction = stateReaction.text;
+        saveUserData();
+        showReaction(finalReaction);
+        
+        if (currentCycleClicks === 1) {
+          setEyeExpression('surprised');
+        } else if (currentCycleClicks === 5) {
+          setEyeExpression('happy');
+        } else if (currentCycleClicks === 10) {
+          setEyeExpression('love');
+        }
+        return;
+      }
+
+      // 检查时间反应
+      const shouldCheckTime = currentCycleClicks === 1 || currentCycleClicks % 15 === 0;
+      
+      if (shouldCheckTime) {
+        for (const timeR of reactionConfig.timeReactions) {
+          if (timeR.start > timeR.end) {
+            if (currentHour >= timeR.start || currentHour < timeR.end) {
+              finalReaction = timeR.text;
+              break;
+            }
+          } else if (currentHour >= timeR.start && currentHour < timeR.end) {
+            finalReaction = timeR.text;
+            break;
+          }
+        }
+      }
+
+      // 随机反应
+      if (!finalReaction) {
+        const randomIndex = Math.floor(Math.random() * reactionConfig.randomReactions.length);
+        finalReaction = reactionConfig.randomReactions[randomIndex];
+        
+        if (Math.random() < 0.3) {
+          const expressions = ['happy', 'surprised', 'wink', 'love'];
+          const randomExp = expressions[Math.floor(Math.random() * expressions.length)];
+          setEyeExpression(randomExp);
+        }
+      }
+
+      // 保存并显示
+      userData.lastClickDate = now.toISOString();
+      saveUserData();
+      
+      if (currentEyeExpression === 'normal') {
+        updateEyeExpression(currentCycleClicks, finalReaction);
+      }
+      
+      showReaction(finalReaction);
+    }
+
+    // ========== 页面加载时初始化 ==========
+    document.addEventListener('DOMContentLoaded', function() {
+      updateClickCounter();
+      
+      // 显示欢迎消息（如果是新开始或被清除）
+      if (wasCleared || userData.totalClicks === 0) {
+        setTimeout(() => {
+          showEmoji("👋");
+          showReaction("Welcome to the new and improved Elypo! Fresh start! 🎉");
+        }, 1000);
+      } else if (userData.cyclesCompleted > 0) {
+        setTimeout(() => {
+          showEmoji("🎊");
+          showReaction(`Welcome back! You've completed ${userData.cyclesCompleted} cycles! 🏆`);
+        }, 1000);
+      }
+      
+      // 初始化眼睛
+      if (eyeLeft && eyeRight) {
+        eyeLeft.className = 'eye eye-left';
+        eyeRight.className = 'eye eye-right';
+      }
+      
+      console.log(`Elypo v${APP_VERSION}: ${userData.totalClicks} clicks, ${userData.cyclesCompleted} cycles`);
+    });
+
+    // ========== 事件绑定 ==========
+    if (mascot) {
+      mascot.addEventListener('click', generateReaction);
+      
+      mascot.addEventListener('mouseenter', () => {
+        if (currentEyeExpression === 'normal') {
+          setEyeExpression('happy');
+        }
+      });
+      
+      mascot.addEventListener('mouseleave', () => {
+        if (currentEyeExpression === 'happy') {
+          setEyeExpression('normal');
+        }
+      });
+    }
+
+    // ========== 等待列表弹窗逻辑 ==========
+    const waitlistModal = document.getElementById('waitlist-modal');
+    const joinButtons = document.querySelectorAll('.cta-btn');
+    const closeModal = document.querySelector('.close-modal');
+    const waitlistForm = document.getElementById('waitlist-form');
+
+    if (joinButtons) {
+      joinButtons.forEach(btn => btn.addEventListener('click', () => {
+        if (waitlistModal) waitlistModal.style.display = 'flex';
+      }));
+    }
+
+    if (closeModal && waitlistModal) {
+      closeModal.addEventListener('click', () => waitlistModal.style.display = 'none');
+    }
+
+    if (waitlistModal) {
+      window.addEventListener('click', (e) => { 
+        if (e.target === waitlistModal) waitlistModal.style.display = 'none'; 
+      });
+    }
+
+    if (waitlistForm) {
+      waitlistForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const email = this.querySelector('input[type="email"]').value;
+        if (email) {
+          alert(`Thanks, ${email}! You're on the list. We'll be in touch.`);
+          this.reset();
+          if (waitlistModal) waitlistModal.style.display = 'none';
+        }
+      });
+    }
+    
+    // ========== 手动重置按钮（调试用） ==========
+    // 在控制台输入：window.resetElypo() 可以手动重置
+    window.resetElypo = function() {
+      localStorage.clear();
+      location.reload();
+    };
+    
+    // 在控制台输入：window.setClicks(500) 可以设置点击次数
+    window.setClicks = function(count) {
+      userData.totalClicks = count;
+      saveUserData();
+      updateClickCounter();
+      console.log(`Set clicks to ${count}`);
+    };
+  </script>
+</body>
+</html>
