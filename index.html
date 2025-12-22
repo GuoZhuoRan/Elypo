@@ -388,6 +388,33 @@
       .hero p { font-size: 18px; }
     }
 
+    /* 可以添加到style部分 */
+    .soul-lab-form button {
+      background: linear-gradient(45deg, #6a5af9, #9d4edd);
+      letter-spacing: 0.5px;
+      font-weight: bold;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .soul-lab-form button:hover {
+      background: linear-gradient(45deg, #9d4edd, #6a5af9);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(157, 78, 221, 0.4);
+    }
+
+    .waitlist-form button {
+      background: linear-gradient(45deg, #4b3cf0, #6a5af9);
+      letter-spacing: 0.5px;
+      font-weight: bold;
+    }
+
+    .waitlist-form button:hover {
+      background: linear-gradient(45deg, #6a5af9, #4b3cf0);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(106, 90, 249, 0.4);
+    }
+
   </style>
 </head>
 <body>
@@ -448,23 +475,49 @@
   <section id="download" class="section">
     <h2>Get Elypo</h2>
     <p>Coming soon to macOS, Windows, and Web.</p>
-    <button class="cta-btn">Join Waitlist</button>
   </section>
   
   <div id="waitlist-modal" class="waitlist-modal" style="display: none;">
     <div class="waitlist-content">
       <span class="close-modal">&times;</span>
-      <h2>Join the Early Flock!</h2>
-      <p>Be among the first to adopt Elypo. Get early access, exclusive updates, and a permanent founder discount.</p>
+      <h2>Join the Early Flock</h2>
+      <p>Be among the first to experience Elypo's AI companion.</p>
       <form id="waitlist-form">
-        <input type="email" placeholder="Your best email" required />
-        <button type="submit">Secure My Spot</button>
+        <input type="email" placeholder="Your email" required />
+        <button type="submit">Join Waitlist</button>
       </form>
-      <p class="note">No spam, ever. Just cute updates.</p>
+      <p class="note">No spam. Just meaningful connections.</p>
+    </div>
+</div>
+
+  <!-- ===== 新增：灵魂实验室弹窗 ===== -->
+  <div id="soul-lab-modal" class="waitlist-modal" style="display: none;">
+    <div class="waitlist-content">
+      <span class="close-modal" id="close-soul-lab">&times;</span>
+      <h2>🔮 Enter the Soul Resonance Lab</h2>
+      <p><strong>A place where only thoughts matter.</strong><br>
+        Shed your identity. Speak through a neutral shell. Connect with another soul guided by a single profound question.</p>
+      <form id="soul-lab-form">
+        <input type="email" placeholder="Your email" required id="soul-lab-email" />
+        <button type="submit">Begin Soul Sync</button>
+      </form>
+      <p class="note">This is not another social app. This is a social <em>experiment</em> in pure connection.</p>
+    </div>
+    <div class="time-selection">
+      <h4>When is your soul available? (Select 3)</h4>
+      <div class="time-options">
+        <label><input type="checkbox" name="time" value="mon-19"> Monday 7-8 PM</label>
+        <label><input type="checkbox" name="time" value="tue-20"> Tuesday 8-9 PM</label>
+        <label><input type="checkbox" name="time" value="wed-19"> Wednesday 7-8 PM</label>
+      </div>
     </div>
   </div>
 
   <div class="footer">© 2025 Elypo Inc. All rights reserved.</div>
+  <!-- 隐藏的管理员入口（只有你知道） -->
+  <div style="position: fixed; bottom: 10px; left: 10px; opacity: 0.05;">
+    <a href="admin.html" id="admin-link">🔧</a>
+  </div>
 
   <script>
     // ========== 版本控制和缓存清除 ==========
@@ -939,16 +992,47 @@
     }
 
     // ========== 等待列表弹窗逻辑 ==========
+    const tryElypoBtn = document.querySelector('.cta-btn');
     const waitlistModal = document.getElementById('waitlist-modal');
-    const joinButtons = document.querySelectorAll('.cta-btn');
-    const closeModal = document.querySelector('.close-modal');
+    const soulLabModal = document.getElementById('soul-lab-modal');
+    const allCloseButtons = document.querySelectorAll('.close-modal');
     const waitlistForm = document.getElementById('waitlist-form');
+    const soulLabForm = document.getElementById('soul-lab-form');
 
-    if (joinButtons) {
-      joinButtons.forEach(btn => btn.addEventListener('click', () => {
-        if (waitlistModal) waitlistModal.style.display = 'flex';
-      }));
+
+    if (tryElypoBtn) {
+      tryElypoBtn.addEventListener('click', () => {
+    // 随机决定弹出哪个（0: 等待列表， 1: 灵魂实验室）
+      const showSoulLab = Math.random() > 0.4;
+    if (showSoulLab) {
+      soulLabModal.style.display = 'flex';
+    } else {
+      waitlistModal.style.display = 'flex';
     }
+      });
+    }
+
+    // 通用关闭弹窗函数
+    function closeAllModals() {
+      waitlistModal.style.display = 'none';
+      soulLabModal.style.display = 'none';
+    }
+
+    // 为所有关闭按钮绑定事件
+    allCloseButtons.forEach(btn => {
+      // 避免重复绑定，先检查
+      if (!btn.hasAttribute('data-close-bound')) {
+        btn.setAttribute('data-close-bound', 'true');
+        btn.addEventListener('click', closeAllModals);
+      }
+    });
+
+    // 点击弹窗外部关闭
+    window.addEventListener('click', (e) => {
+      if (e.target === waitlistModal || e.target === soulLabModal) {
+        closeAllModals();
+      }
+    });
 
     if (closeModal && waitlistModal) {
       closeModal.addEventListener('click', () => waitlistModal.style.display = 'none');
@@ -968,6 +1052,21 @@
           alert(`Thanks, ${email}! You're on the list. We'll be in touch.`);
           this.reset();
           if (waitlistModal) waitlistModal.style.display = 'none';
+        }
+      });
+    }
+
+    // ===== 新增：灵魂实验室表单提交处理 =====
+    if (soulLabForm) {
+      soulLabForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const email = document.getElementById('soul-lab-email').value;
+        if (email) {
+          // 这里替换为你的实际处理逻辑，例如发送到后端或记录到表格
+          console.log(`Soul Lab 实验报名邮箱: ${email}`);
+          alert(`Thank you! Your interest in the Soul Resonance Lab has been registered. We will contact you with details soon.`);
+          this.reset();
+          closeAllModals(); // 使用上面定义的通用关闭函数
         }
       });
     }
