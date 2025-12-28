@@ -388,28 +388,14 @@
       .hero p { font-size: 18px; }
     }
 
-    /* 可以添加到style部分 */
-    .soul-lab-form button {
-      background: linear-gradient(45deg, #6a5af9, #9d4edd);
-      letter-spacing: 0.5px;
-      font-weight: bold;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .soul-lab-form button:hover {
-      background: linear-gradient(45deg, #9d4edd, #6a5af9);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(157, 78, 221, 0.4);
-    }
-
-    .waitlist-form button {
+    /* Waitlist form button styling */
+    .waitlist-content button {
       background: linear-gradient(45deg, #4b3cf0, #6a5af9);
       letter-spacing: 0.5px;
       font-weight: bold;
     }
 
-    .waitlist-form button:hover {
+    .waitlist-content button:hover {
       background: linear-gradient(45deg, #6a5af9, #4b3cf0);
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(106, 90, 249, 0.4);
@@ -483,33 +469,10 @@
       <h2>Join the Early Flock</h2>
       <p>Be among the first to experience Elypo's AI companion.</p>
       <form id="waitlist-form">
-        <input type="email" placeholder="Your email" required />
+        <input type="email" placeholder="Your email" required id="waitlist-email" />
         <button type="submit">Join Waitlist</button>
       </form>
       <p class="note">No spam. Just meaningful connections.</p>
-    </div>
-</div>
-
-  <!-- ===== 新增：灵魂实验室弹窗 ===== -->
-  <div id="soul-lab-modal" class="waitlist-modal" style="display: none;">
-    <div class="waitlist-content">
-      <span class="close-modal" id="close-soul-lab">&times;</span>
-      <h2>🔮 Enter the Soul Resonance Lab</h2>
-      <p><strong>A place where only thoughts matter.</strong><br>
-        Shed your identity. Speak through a neutral shell. Connect with another soul guided by a single profound question.</p>
-      <form id="soul-lab-form">
-        <input type="email" placeholder="Your email" required id="soul-lab-email" />
-        <button type="submit">Begin Soul Sync</button>
-      </form>
-      <p class="note">This is not another social app. This is a social <em>experiment</em> in pure connection.</p>
-    </div>
-    <div class="time-selection">
-      <h4>When is your soul available? (Select 3)</h4>
-      <div class="time-options">
-        <label><input type="checkbox" name="time" value="mon-19"> Monday 7-8 PM</label>
-        <label><input type="checkbox" name="time" value="tue-20"> Tuesday 8-9 PM</label>
-        <label><input type="checkbox" name="time" value="wed-19"> Wednesday 7-8 PM</label>
-      </div>
     </div>
   </div>
 
@@ -991,85 +954,133 @@
       });
     }
 
-    // ========== 等待列表弹窗逻辑 ==========
+    // ========== Waitlist Modal Logic ==========
     const tryElypoBtn = document.querySelector('.cta-btn');
     const waitlistModal = document.getElementById('waitlist-modal');
-    const soulLabModal = document.getElementById('soul-lab-modal');
     const allCloseButtons = document.querySelectorAll('.close-modal');
     const waitlistForm = document.getElementById('waitlist-form');
-    const soulLabForm = document.getElementById('soul-lab-form');
-
 
     if (tryElypoBtn) {
       tryElypoBtn.addEventListener('click', () => {
-    // 随机决定弹出哪个（0: 等待列表， 1: 灵魂实验室）
-      const showSoulLab = Math.random() > 0.4;
-    if (showSoulLab) {
-      soulLabModal.style.display = 'flex';
-    } else {
-      waitlistModal.style.display = 'flex';
-    }
+        waitlistModal.style.display = 'flex';
       });
     }
 
-    // 通用关闭弹窗函数
-    function closeAllModals() {
-      waitlistModal.style.display = 'none';
-      soulLabModal.style.display = 'none';
+    // Close modal function
+    function closeModal() {
+      if (waitlistModal) waitlistModal.style.display = 'none';
     }
 
-    // 为所有关闭按钮绑定事件
+    // Bind close buttons
     allCloseButtons.forEach(btn => {
-      // 避免重复绑定，先检查
-      if (!btn.hasAttribute('data-close-bound')) {
-        btn.setAttribute('data-close-bound', 'true');
-        btn.addEventListener('click', closeAllModals);
-      }
+      btn.addEventListener('click', closeModal);
     });
 
-    // 点击弹窗外部关闭
+    // Click outside to close
     window.addEventListener('click', (e) => {
-      if (e.target === waitlistModal || e.target === soulLabModal) {
-        closeAllModals();
+      if (e.target === waitlistModal) {
+        closeModal();
       }
     });
 
-    if (closeModal && waitlistModal) {
-      closeModal.addEventListener('click', () => waitlistModal.style.display = 'none');
-    }
-
-    if (waitlistModal) {
-      window.addEventListener('click', (e) => { 
-        if (e.target === waitlistModal) waitlistModal.style.display = 'none'; 
-      });
-    }
-
+    // Waitlist form submission
     if (waitlistForm) {
       waitlistForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        const email = this.querySelector('input[type="email"]').value;
+        console.log('📧 Waitlist form submitted!');
+        
+        const email = document.getElementById('waitlist-email').value;
+        console.log('✉️ Email:', email);
+        
         if (email) {
+          // Save to waitlist (which now goes to soulLabUsers for admin panel)
+          saveToWaitlist(email);
+          
           alert(`Thanks, ${email}! You're on the list. We'll be in touch.`);
           this.reset();
-          if (waitlistModal) waitlistModal.style.display = 'none';
+          closeModal();
         }
       });
+    } else {
+      console.error('❌ Waitlist form not found!');
     }
-
-    // ===== 新增：灵魂实验室表单提交处理 =====
-    if (soulLabForm) {
-      soulLabForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const email = document.getElementById('soul-lab-email').value;
-        if (email) {
-          // 这里替换为你的实际处理逻辑，例如发送到后端或记录到表格
-          console.log(`Soul Lab 实验报名邮箱: ${email}`);
-          alert(`Thank you! Your interest in the Soul Resonance Lab has been registered. We will contact you with details soon.`);
-          this.reset();
-          closeAllModals(); // 使用上面定义的通用关闭函数
-        }
+    
+    // ========== Email Registration Functions ==========
+    function saveToWaitlist(email) {
+      console.log('💾 saveToWaitlist called with:', email);
+      
+      const soulLabUsers = JSON.parse(localStorage.getItem('soulLabUsers')) || [];
+      console.log('📚 Existing users:', soulLabUsers.length);
+      
+      // 检查是否已存在
+      const existingUserIndex = soulLabUsers.findIndex(u => u.email === email);
+      console.log('🔍 Existing user index:', existingUserIndex);
+      
+      if (existingUserIndex >= 0) {
+        console.log('⚠️ Email already registered');
+        return;
+      }
+      
+      // 创建用户数据（简化版，没有时间段）
+      const userData = {
+        id: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        email: email,
+        times: [], // 空数组，因为现在不收集时间
+        createdAt: new Date().toISOString(),
+        matchCount: 0,
+        status: 'pending'
+      };
+      
+      console.log('👤 New user data:', userData);
+      
+      // 添加到数组
+      soulLabUsers.push(userData);
+      console.log('✨ Added new user to array');
+      
+      // 保存到localStorage
+      console.log('💾 Saving to localStorage...');
+      localStorage.setItem('soulLabUsers', JSON.stringify(soulLabUsers));
+      
+      // 验证保存
+      const saved = JSON.parse(localStorage.getItem('soulLabUsers'));
+      console.log('✅ Verified save - Total users now:', saved.length);
+      console.log('📋 All users:', saved);
+      
+      // 记录到日志
+      logRegistration('waitlist', email);
+    }
+    
+    function logRegistration(type, email, data = null) {
+      const logs = JSON.parse(localStorage.getItem('registrationLogs')) || [];
+      
+      logs.push({
+        type: type,
+        email: email,
+        data: data,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent
       });
+      
+      localStorage.setItem('registrationLogs', JSON.stringify(logs));
     }
+    
+    // 导出函数供管理面板使用
+    window.exportWaitlistUsers = function() {
+      const users = JSON.parse(localStorage.getItem('soulLabUsers')) || [];
+      console.log('Waitlist Users:', users);
+      return users;
+    };
+    
+    window.exportAllRegistrations = function() {
+      const users = JSON.parse(localStorage.getItem('soulLabUsers')) || [];
+      const logs = JSON.parse(localStorage.getItem('registrationLogs')) || [];
+      
+      console.log('=== ALL REGISTRATIONS ===');
+      console.log('Waitlist Users:', users);
+      console.log('Registration Logs:', logs);
+      
+      return { users, logs };
+    };
     
     // ========== 手动重置按钮（调试用） ==========
     // 在控制台输入：window.resetElypo() 可以手动重置
@@ -1085,6 +1096,29 @@
       updateClickCounter();
       console.log(`Set clicks to ${count}`);
     };
+    
+    // 快速测试注册功能
+    window.testRegistration = function(testEmail = 'test@example.com') {
+      console.log('🧪 Testing registration with:', testEmail);
+      
+      try {
+        saveToWaitlist(testEmail);
+        console.log('✅ Test registration successful!');
+        console.log('👉 Now check admin.html to see the user');
+        return window.exportWaitlistUsers();
+      } catch (error) {
+        console.error('❌ Test registration failed:', error);
+      }
+    };
+    
+    // 显示调试帮助
+    console.log('%c📧 Elypo Waitlist Debug Tools', 'color: #6a5af9; font-size: 16px; font-weight: bold;');
+    console.log('%cQuick commands:', 'color: #9d4edd; font-weight: bold;');
+    console.log('  testRegistration()        - Add a test user');
+    console.log('  exportWaitlistUsers()     - View all registered users');
+    console.log('  exportAllRegistrations()  - View all data');
+    console.log('  localStorage.clear()      - Clear all data');
+    console.log(' ');
   </script>
 </body>
 </html>
