@@ -279,7 +279,7 @@
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: linear-gradient(135deg, #e8ecff, #f6f2ff);
       color: #333;
     }
@@ -401,6 +401,121 @@
       box-shadow: 0 8px 20px rgba(106, 90, 249, 0.4);
     }
 
+    /* Click Counter Silenced */
+    #click-counter {
+      display: none !important;
+    }
+    /* Chat Interface Styling - Glassmorphism */
+    .chat-container {
+      margin-top: 30px;
+      width: 320px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 12px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 
+        0 8px 32px rgba(31, 38, 135, 0.1),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+      display: flex;
+      gap: 10px;
+      z-index: 200;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .chat-container:hover {
+      transform: translateX(-50%) translateY(-2px);
+      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.15);
+    }
+    
+    .chat-input {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 20px;
+      font-size: 15px;
+      outline: none;
+      transition: all 0.2s;
+      color: #444;
+    }
+
+    .chat-input:focus {
+      background: white;
+      box-shadow: 0 0 0 2px rgba(106, 90, 249, 0.2);
+    }
+    
+    .chat-send-btn {
+      background: linear-gradient(135deg, #6a5af9, #4b3cf0);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 4px 10px rgba(106, 90, 249, 0.3);
+    }
+    
+    .chat-send-btn:hover {
+      transform: scale(1.1) rotate(-10deg);
+      box-shadow: 0 6px 15px rgba(106, 90, 249, 0.5);
+    }
+
+    .settings-btn {
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      background: rgba(255,255,255,0.4);
+      backdrop-filter: blur(5px);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      border: 1px solid rgba(255,255,255,0.5);
+      transition: all 0.3s;
+      opacity: 0.6;
+    }
+
+    .settings-btn:hover {
+      background: white;
+      opacity: 1;
+      transform: rotate(90deg);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .settings-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .settings-content {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      width: 300px;
+      position: relative;
+    }
+
   </style>
 </head>
 <body>
@@ -431,6 +546,15 @@
       <div class="button-wrap">
         <button class="cta-btn">Try Elypo</button>
       </div>
+
+      <!-- Chat Interface -->
+      <div class="chat-container">
+        <input type="text" class="chat-input" id="chat-input" placeholder="Say something..." />
+        <button class="chat-send-btn" id="chat-send-btn">➤</button>
+      </div>
+
+      <!-- Settings Icon -->
+      <div class="settings-btn" id="settings-btn" title="Configure API Key">⚙️</div>
     </div>
   </section>
 
@@ -482,6 +606,21 @@
     <a href="admin.html" id="admin-link">🔧</a>
   </div>
 
+  <div id="settings-modal" class="settings-modal" style="display: none;">
+    <div class="settings-content">
+      <span class="close-modal" id="close-settings">&times;</span>
+      <h2>Settings ⚙️</h2>
+      <p>Configure your DeepSeek API Key to enable Elypo's brain.</p>
+      <div style="margin-bottom: 20px;">
+        <label for="api-key" style="display: block; margin-bottom: 5px; font-weight: bold;">DeepSeek API Key</label>
+        <input type="password" id="api-key-input" placeholder="sk-..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+      </div>
+      <button id="save-settings-btn" style="width: 100%; padding: 12px; background: #6a5af9; color: white; border: none; border-radius: 8px; cursor: pointer;">Save Key</button>
+      <p style="font-size: 12px; color: #999; margin-top: 10px;">Key is stored locally in your browser.</p>
+    </div>
+  </div>
+
+  <script src="scripts/llm-api.js"></script>
   <script>
     // ========== 版本控制和缓存清除 ==========
     const APP_VERSION = '2.0.1'; // 每次修改这个版本号来强制清除缓存
@@ -798,117 +937,17 @@
       }, 3000);
     }
 
-    // ========== 主反应生成函数 - 修复版 ==========
+    // ========== 主反应生成函数 - 简化版 (Only Expressions) ==========
     function generateReaction() {
-      // 增加点击次数
-      userData.totalClicks++;
+      // User requested to silence click count, chat bubble, and emoji.
+      // Only maintain expressions.
       
-      // 检查是否需要重置（在增加后检查）
-      if (userData.totalClicks > MAX_CLICKS) {
-        const cyclesCompleted = Math.floor(userData.totalClicks / MAX_CLICKS);
-        userData.totalClicks = 1; // 重置为1（不是0，这样就是新循环的开始）
-        userData.cyclesCompleted = cyclesCompleted;
-        
-        // 保存数据
-        saveUserData();
-        
-        // 庆祝重置
-        showEmoji("🔄");
-        showReaction(`🎊 Cycle ${cyclesCompleted} complete! Starting fresh! 🌟`);
-        updateClickCounter();
-        setEyeExpression('love');
-        
-        return;
-      }
+      const expressions = ['happy', 'surprised', 'wink', 'love', 'normal'];
+      const randomExp = expressions[Math.floor(Math.random() * expressions.length)];
+      setEyeExpression(randomExp);
       
-      // 更新显示
-      updateClickCounter();
-      
-      // 显示表情
-      const emoji = getEmojiForClicks(userData.totalClicks);
-      showEmoji(emoji);
-      
-      const now = new Date();
-      const currentHour = now.getHours();
-      let finalReaction = '';
-
-      // 检查成就
-      const currentCycleClicks = userData.totalClicks % MAX_CLICKS || userData.totalClicks;
-      for (const ach of reactionConfig.achievementReactions) {
-        if (currentCycleClicks === ach.count && !userData.achieved.includes(ach.id)) {
-          userData.achieved.push(ach.id);
-          finalReaction = `🎉 ${ach.text}`;
-          saveUserData();
-          showReaction(finalReaction);
-          
-          if (ach.count === 7) {
-            setEyeExpression('wink');
-          } else if (ach.count === 42) {
-            setEyeExpression('surprised');
-          } else if (ach.count === 100) {
-            setEyeExpression('happy');
-          } else if (ach.count === 500) {
-            setEyeExpression('love');
-          }
-          return;
-        }
-      }
-
-      // 检查状态反应
-      const stateReaction = reactionConfig.stateReactions.find(r => r.state === currentCycleClicks);
-      if (stateReaction) {
-        finalReaction = stateReaction.text;
-        saveUserData();
-        showReaction(finalReaction);
-        
-        if (currentCycleClicks === 1) {
-          setEyeExpression('surprised');
-        } else if (currentCycleClicks === 5) {
-          setEyeExpression('happy');
-        } else if (currentCycleClicks === 10) {
-          setEyeExpression('love');
-        }
-        return;
-      }
-
-      // 检查时间反应
-      const shouldCheckTime = currentCycleClicks === 1 || currentCycleClicks % 15 === 0;
-      
-      if (shouldCheckTime) {
-        for (const timeR of reactionConfig.timeReactions) {
-          if (timeR.start > timeR.end) {
-            if (currentHour >= timeR.start || currentHour < timeR.end) {
-              finalReaction = timeR.text;
-              break;
-            }
-          } else if (currentHour >= timeR.start && currentHour < timeR.end) {
-            finalReaction = timeR.text;
-            break;
-          }
-        }
-      }
-
-      // 随机反应
-      if (!finalReaction) {
-        const randomIndex = Math.floor(Math.random() * reactionConfig.randomReactions.length);
-        finalReaction = reactionConfig.randomReactions[randomIndex];
-        
-        if (Math.random() < 0.3) {
-          const expressions = ['happy', 'surprised', 'wink', 'love'];
-          const randomExp = expressions[Math.floor(Math.random() * expressions.length)];
-          setEyeExpression(randomExp);
-        }
-      }
-
-      // 保存并显示
-      userData.lastClickDate = now.toISOString();
-      saveUserData();
-      
-      if (currentEyeExpression === 'normal') {
-        updateEyeExpression(currentCycleClicks, finalReaction);
-      }
-      
-      showReaction(finalReaction);
+      // Play a subtle sound or just visual? User said "Silence", likely referring to text/bubble.
+      // We will just do the expression.
     }
 
     // ========== 页面加载时初始化 ==========
@@ -1119,6 +1158,107 @@
     console.log('  exportAllRegistrations()  - View all data');
     console.log('  localStorage.clear()      - Clear all data');
     console.log(' ');
+
+    // ========== Chat & Settings Logic ==========
+    const chatInput = document.getElementById('chat-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettings = document.getElementById('close-settings');
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+    const apiKeyInput = document.getElementById('api-key-input');
+
+    // Settings Modal
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        apiKeyInput.value = LLMService.apiKey || '';
+        settingsModal.style.display = 'flex';
+      });
+    }
+
+    if (closeSettings) {
+      closeSettings.addEventListener('click', () => {
+        settingsModal.style.display = 'none';
+      });
+    }
+
+    if (saveSettingsBtn) {
+      saveSettingsBtn.addEventListener('click', () => {
+        const key = apiKeyInput.value.trim();
+        if (key) {
+          LLMService.setApiKey(key);
+          alert('API Key saved! 🧠');
+          settingsModal.style.display = 'none';
+        } else {
+          alert('Please enter a valid key.');
+        }
+      });
+    }
+
+    // Chat Logic
+    async function handleChat() {
+      const message = chatInput.value.trim();
+      if (!message) return;
+
+      // Clear input
+      chatInput.value = '';
+      
+      // Show user message (optional, or just show mascot thinking)
+      showReaction("Thinking... 🤔");
+      setEyeExpression('wink');
+
+      // Call LLM
+      const response = await LLMService.chat(message);
+      
+      // Show response
+      // Calculate duration based on text length (approx 200ms per word + base 2000ms)
+      const duration = 2000 + (response.text.split(' ').length * 200);
+      
+      if (feedbackText && feedbackBubble) {
+        feedbackText.textContent = response.text;
+        feedbackBubble.style.display = 'block';
+        setTimeout(() => feedbackBubble.classList.add('show'), 10);
+        
+        // Clear existing timer if any (would need to track it, but for now just simple timeout)
+        setTimeout(() => {
+          feedbackBubble.classList.remove('show');
+          setTimeout(() => {
+             // Only hide if not shown again
+             if (!feedbackBubble.classList.contains('show')) {
+               feedbackBubble.style.display = 'none';
+             }
+          }, 300);
+        }, duration);
+      }
+      
+      // Speak
+      LLMService.speak(response.text);
+      
+      // Animation
+      setEyeExpression('happy');
+    }
+
+    if (chatSendBtn) {
+      chatSendBtn.addEventListener('click', handleChat);
+    }
+    
+    if (chatInput) {
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleChat();
+      });
+    }
+
+    // Sync animation with speech
+    window.addEventListener('elypo-speak-start', () => {
+      if (mascot) mascot.style.animation = 'float 0.5s ease-in-out infinite'; // Faster float while speaking
+      setEyeExpression('happy');
+    });
+
+    window.addEventListener('elypo-speak-end', () => {
+      if (mascot) mascot.style.animation = 'float 4s ease-in-out infinite'; // Back to normal
+      setEyeExpression('normal');
+    });
+
   </script>
 </body>
 </html>
