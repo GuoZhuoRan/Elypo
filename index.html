@@ -478,7 +478,7 @@
       border-radius: 50%;
       width: 32px;
       height: 32px;
-      display: flex;
+      display: none !important; /* Hidden as requested */
       align-items: center;
       justify-content: center;
       cursor: pointer;
@@ -1203,6 +1203,16 @@
       // Clear input
       chatInput.value = '';
       
+      // Trigger a single shake animation
+      if (mascot) {
+        mascot.classList.remove('shake-animation'); // Reset if exists
+        void mascot.offsetWidth; // Trigger reflow
+        mascot.style.animation = 'none'; // Temporarily stop float to allow shake
+        setTimeout(() => {
+             mascot.style.animation = 'float 4s ease-in-out infinite'; // Restore float after shake
+        }, 500);
+      }
+      
       // Show user message (optional, or just show mascot thinking)
       showReaction("Thinking... 🤔");
       setEyeExpression('wink');
@@ -1250,7 +1260,7 @@
 
     // Sync animation with speech
     window.addEventListener('elypo-speak-start', () => {
-      if (mascot) mascot.style.animation = 'float 0.5s ease-in-out infinite'; // Faster float while speaking
+      // mascot.style.animation = 'float 0.5s ease-in-out infinite'; // Disabled repeated shaking
       setEyeExpression('happy');
     });
 
