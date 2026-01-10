@@ -934,7 +934,7 @@
             feedbackBubble.style.display = 'none';
           }
         }, 300);
-      }, 3000);
+      }, 5000);
     }
 
     // ========== 主反应生成函数 - 简化版 (Only Expressions) ==========
@@ -1221,8 +1221,8 @@
       const response = await LLMService.chat(message);
       
       // Show response
-      // Calculate duration based on text length (approx 200ms per word + base 2000ms)
-      const duration = 2000 + (response.text.split(' ').length * 200);
+      // Calculate duration based on text length (approx 400ms per word + base 5000ms)
+      const duration = 5000 + (response.text.split(' ').length * 400);
       
       if (feedbackText && feedbackBubble) {
         feedbackText.textContent = response.text;
